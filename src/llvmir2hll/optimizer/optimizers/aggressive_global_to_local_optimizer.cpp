@@ -52,14 +52,11 @@ void AggressiveGlobalToLocalOptimizer::doOptimization() {
 * @brief Converts all global variables to local variables.
 */
 void AggressiveGlobalToLocalOptimizer::convertGlobalVarsToLocalVars() {
-	// TODO The following algorithm may introduce local variables which are
-	//      never used. Improve it by computing the global variables that are
-	//      actually used in the function.
-
 	// Since we are going to remove global variables from the module during
 	// iteration, store them into a container and iterate over this copy.
 	VarSet globalVars(module->getGlobalVars());
 
+	// TODO Implement this function more efficiently?
 	// For each function...
 	for (auto i = module->func_definition_begin(),
 				 e = module->func_definition_end(); i != e; ++i) {
