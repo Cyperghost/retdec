@@ -4,6 +4,7 @@
 * @copyright (c) 2017 Avast Software, licensed under the MIT license
 */
 
+#include <retdec/llvmir2hll/analysis/var_uses_visitor.h>
 #include "retdec/llvmir2hll/ir/function.h"
 #include "retdec/llvmir2hll/ir/module.h"
 #include "retdec/llvmir2hll/ir/variable.h"
@@ -19,14 +20,17 @@ namespace llvmir2hll {
 * @brief Constructs a new optimizer.
 *
 * @param[in] module Module to be optimized.
+* @param[in] va Analysis of values.
 *
 * @par Preconditions
-*  - @a module is non-null
+*  - @a module and @a va are non-null
 */
-AggressiveGlobalToLocalOptimizer::AggressiveGlobalToLocalOptimizer(
-			ShPtr<Module> module): Optimizer(module)  {
-		PRECONDITION_NON_NULL(module);
-	}
+AggressiveGlobalToLocalOptimizer::AggressiveGlobalToLocalOptimizer(ShPtr<Module> module,
+												   ShPtr<ValueAnalysis> va):
+		FuncOptimizer(module), va(va), vuv() {
+	PRECONDITION_NON_NULL(module);
+	PRECONDITION_NON_NULL(va);
+}
 
 /**
 * @brief Destructs the optimizer.
@@ -34,6 +38,13 @@ AggressiveGlobalToLocalOptimizer::AggressiveGlobalToLocalOptimizer(
 AggressiveGlobalToLocalOptimizer::~AggressiveGlobalToLocalOptimizer() {}
 
 void AggressiveGlobalToLocalOptimizer::doOptimization() {
+	// Initialization.
+	if (!va->isInValidState()) {
+		va->clearCache();
+	}
+	vuv = VarUsesVisitor::create(va, true, module);
+	vuv->disableCaching();
+
 	convertGlobalVarsToLocalVars();
 }
 
@@ -51,7 +62,7 @@ void AggressiveGlobalToLocalOptimizer::convertGlobalVarsToLocalVars() {
 
 	// For each function...
 	for (auto i = module->func_definition_begin(),
-			e = module->func_definition_end(); i != e; ++i) {
+				 e = module->func_definition_end(); i != e; ++i) {
 		// For each global variable...
 		for (const auto &var : globalVars) {
 			// Skip global variables which have an assigned name from debug
@@ -60,9 +71,11 @@ void AggressiveGlobalToLocalOptimizer::convertGlobalVarsToLocalVars() {
 				continue;
 			}
 
-			ShPtr<Expression> init(module->getInitForGlobalVar(var));
-			convertGlobalVarToLocalVarInFunc(var, *i, init);
-			module->removeGlobalVar(var);
+			if (vuv->isUsed(var, *i, false)) {
+				ShPtr<Expression> init(module->getInitForGlobalVar(var));
+				convertGlobalVarToLocalVarInFunc(var, *i, init);
+				module->removeGlobalVar(var);
+			}
 		}
 	}
 }

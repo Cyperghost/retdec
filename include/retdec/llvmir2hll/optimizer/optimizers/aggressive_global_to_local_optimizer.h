@@ -9,7 +9,9 @@
 #define RETDEC_LLVMIR2HLL_OPTIMIZER_OPTIMIZERS_AGGRESSIVE_GLOBAL_TO_LOCAL_OPTIMIZER_H
 
 #include "retdec/llvmir2hll/optimizer/optimizer.h"
+#include "retdec/llvmir2hll/analysis/var_uses_visitor.h"
 #include "retdec/llvmir2hll/support/smart_ptr.h"
+#include "retdec/llvmir2hll/optimizer/func_optimizer.h"
 
 namespace retdec {
 namespace llvmir2hll {
@@ -26,9 +28,9 @@ namespace llvmir2hll {
 *
 * This is a concrete optimizer which should not be subclassed.
 */
-class AggressiveGlobalToLocalOptimizer final: public Optimizer {
+class AggressiveGlobalToLocalOptimizer final: public FuncOptimizer {
 public:
-	AggressiveGlobalToLocalOptimizer(ShPtr<Module> module);
+	AggressiveGlobalToLocalOptimizer(ShPtr<Module> module, ShPtr<ValueAnalysis> va);
 
 	virtual ~AggressiveGlobalToLocalOptimizer() override;
 
@@ -38,6 +40,11 @@ private:
 	virtual void doOptimization() override;
 
 	void convertGlobalVarsToLocalVars();
+
+	/// Analysis of used values.
+	ShPtr<ValueAnalysis> va;
+	/// Visitor for obtaining uses of variables.
+	ShPtr<VarUsesVisitor> vuv;
 };
 
 } // namespace llvmir2hll

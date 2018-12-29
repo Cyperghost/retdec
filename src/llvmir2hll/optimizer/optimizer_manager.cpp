@@ -175,7 +175,7 @@ void OptimizerManager::optimize(ShPtr<Module> m) {
 	// should be run after structure optimizations because they may introduce
 	// constructs that can be optimized.
 	run<AggressiveDerefOptimizer>(m);
-	run<AggressiveGlobalToLocalOptimizer>(m);
+	run<AggressiveGlobalToLocalOptimizer>(m, va);
 
 	// Data-flow optimizations.
 	// The following optimizations should be run before CopyPropagation to
