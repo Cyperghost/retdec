@@ -438,7 +438,7 @@ bool Decompiler::runOnModule(Module &m) {
 	retdec::llvmir2hll::StringSet funcPrefixes(getPrefixesOfFuncsToBeRemoved());
 	if (Debug) retdec::llvm_support::printPhase("removing functions prefixed with [" + joinStrings(funcPrefixes) + "]");
 	//Optimize performance by 0 functions that shout be removed
-	if(funcPrefixes.size() > 0) {
+	if(!funcPrefixes.empty()) {
 		removeFuncsPrefixedWith(funcPrefixes);
 	}
 	if (!KeepLibraryFunctions) {
