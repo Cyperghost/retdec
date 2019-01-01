@@ -439,7 +439,7 @@ bool Decompiler::runOnModule(Module &m) {
 	if (Debug) retdec::llvm_support::printPhase("removing functions prefixed with [" + joinStrings(funcPrefixes) + "]");
 	//Optimize performance by 0 functions that shout be removed
 	if(!funcPrefixes.empty()) {
-		removeFuncsPrefixedWith(funcPrefixes);
+		//removeFuncsPrefixedWith(funcPrefixes);
 	}
 	if (!KeepLibraryFunctions) {
 		if (Debug) retdec::llvm_support::printPhase("removing functions from standard libraries");
@@ -452,7 +452,7 @@ bool Decompiler::runOnModule(Module &m) {
 	// unreachable code. This causes problems later during optimizations
 	// because the code exists in BIR, but not in a CFG.
 	if (Debug) retdec::llvm_support::printPhase("removing code that is not reachable in a CFG");
-	removeCodeUnreachableInCFG();
+//	removeCodeUnreachableInCFG();
 
 	if (Debug) retdec::llvm_support::printPhase("signed/unsigned types fixing");
 	fixSignedUnsignedTypes();

@@ -8,8 +8,8 @@ if(CMAKE_CXX_COMPILER)
 endif()
 
 ExternalProject_Add(rapidjson-project
-	URL https://github.com/Tencent/rapidjson/archive/v1.1.0.zip
-	URL_HASH SHA256=8e00c38829d6785a2dfb951bb87c6974fa07dfe488aa5b25deec4b8bc0f6a3ab
+	GIT_REPOSITORY https://github.com/Tencent/rapidjson.git
+	GIT_TAG master
 	DOWNLOAD_NAME rapidjson.zip
 	CMAKE_ARGS
 		# This does not work on MSVC, but may be useful on Linux.
