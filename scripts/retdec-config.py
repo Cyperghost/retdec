@@ -89,8 +89,8 @@ UNPACKER = os.path.join(INSTALL_BIN_DIR, 'retdec-unpacker')
 # Other.
 
 if platform == "darwin":
-    # mac os x doesn't support the v flag
-    LOG_TIME = ['/usr/bin/time']
+    # mac os x need the `gnu-time´ package
+    LOG_TIME = ['/usr/local/bin/gtime', '-v']
 else:
     LOG_TIME = ['/usr/bin/time', '-v']
 LOG_TIMEOUT = 300
