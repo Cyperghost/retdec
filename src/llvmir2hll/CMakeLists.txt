@@ -304,7 +304,7 @@ set(LLVMIR2HLL_SOURCES
 	var_renamer/var_renamers/readable_var_renamer.cpp
 	var_renamer/var_renamers/simple_var_renamer.cpp
 	var_renamer/var_renamers/unified_var_renamer.cpp
-)
+        support/manager/visitor_manager.cpp)
 
 # Build of the original LLVMIR2BIR converter fails on GCC 6.1 with the
 # following internal error:
