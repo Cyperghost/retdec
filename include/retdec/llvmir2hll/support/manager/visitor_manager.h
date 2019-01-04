@@ -13,8 +13,8 @@
 #include "retdec/llvmir2hll/support/singleton.h"
 #include "retdec/llvmir2hll/support/smart_ptr.h"
 
-#define VISIT(param, obj) VisitorManager::getInstance().push(param, obj);
-#define VISIT_THIS(obj) VISIT(this,obj)
+#define VISIT(obj, param) VisitorManager::getInstance().push(param, obj);
+#define VISIT_THIS(obj) VISIT(obj, this)
 
 namespace retdec {
 namespace llvmir2hll {
@@ -118,7 +118,7 @@ protected:
 	unsigned cores;
 	std::mutex mutex;
 	unsigned threadWaiting = 0;
-	bool stopped = false, completed = false;
+	bool stopped = false, completed = true;
 	std::condition_variable cvComplete, cv;
 private:
 	// this function should not call

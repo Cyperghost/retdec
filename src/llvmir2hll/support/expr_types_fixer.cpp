@@ -31,6 +31,7 @@
 #include "retdec/llvmir2hll/ir/variable.h"
 #include "retdec/llvmir2hll/support/debug.h"
 #include "retdec/llvmir2hll/support/expr_types_fixer.h"
+#include "retdec/llvmir2hll/support/manager/visitor_manager.h"
 
 namespace retdec {
 namespace llvmir2hll {
@@ -181,13 +182,13 @@ void ExprTypesFixer::fixTypes(ShPtr<Module> module) {
 	// Global variables.
 	for (auto i = module->global_var_begin(), e = module->global_var_begin();
 			i != e; ++i) {
-		(*i)->accept(visitor.get());
+		VISIT(*i, visitor.get())
 	}
 
 	// Functions.
 	for (auto i = module->func_definition_begin(),
 			e = module->func_definition_end(); i != e; ++i) {
-		(*i)->accept(visitor.get());
+		VISIT(*i, visitor.get())
 	}
 }
 
@@ -247,8 +248,8 @@ void ExprTypesFixer::visit(ShPtr<ModOpExpr> expr) {
 }
 
 void ExprTypesFixer::visit(ShPtr<AssignStmt> stmt) {
-	stmt->getLhs()->accept(this);
-	stmt->getRhs()->accept(this);
+	VISIT_THIS(stmt->getLhs())
+	VISIT_THIS(stmt->getRhs())
 
 	ShPtr<Variable> var = cast<Variable>(stmt->getLhs());
 	if (!var) {

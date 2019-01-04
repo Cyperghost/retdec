@@ -15,6 +15,7 @@
 #include "retdec/llvmir2hll/support/visitors/ordered_all_visitor.h"
 #include "retdec/utils/container.h"
 #include "retdec/utils/non_copyable.h"
+#include "retdec/llvmir2hll/support/manager/visitor_manager.h"
 
 using retdec::utils::hasItem;
 
@@ -132,7 +133,7 @@ private:
 		for (const auto &varInitPair : globalVars) {
 			usedVarsInLastInit.clear();
 			if (ShPtr<Expression> init = varInitPair->getInitializer()) {
-				init->accept(this);
+				VISIT_THIS(init)
 			}
 			varToUsedVarsMap[varInitPair->getVar()] = usedVarsInLastInit;
 		}
