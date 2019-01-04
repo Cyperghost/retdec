@@ -99,16 +99,16 @@ OrderedAllVisitor::OrderedAllVisitor(bool visitSuccessors, bool visitNestedStmts
 OrderedAllVisitor::~OrderedAllVisitor() {}
 
 void OrderedAllVisitor::visit(ShPtr<GlobalVarDef> varDef) {
-	VISIT_THIS(Variable::accept, varDef->getVar())
+	VISIT_THIS(varDef->getVar())
 	if (ShPtr<Expression> init = varDef->getInitializer()) {
-		VISIT_THIS(Expression::accept, init)
+		VISIT_THIS(init)
 	}
 }
 
 void OrderedAllVisitor::visit(ShPtr<Function> func) {
 	// For each parameter...
 	for (const auto &param : func->getParams()) {
-		VISIT_THIS(Variable::accept, param)
+		VISIT_THIS(param)
 	}
 
 	if (ShPtr<Statement> body = func->getBody()) {
@@ -122,8 +122,8 @@ void OrderedAllVisitor::visit(ShPtr<Function> func) {
 
 void OrderedAllVisitor::visit(ShPtr<AssignStmt> stmt) {
 	lastStmt = stmt;
-	VISIT_THIS(Expression::accept, stmt->getLhs())
-	VISIT_THIS(Expression::accept, stmt->getRhs())
+	VISIT_THIS(stmt->getLhs())
+	VISIT_THIS(stmt->getRhs())
 	if (visitSuccessors && stmt->hasSuccessor()) {
 		visitStmt(stmt->getSuccessor());
 	}
@@ -131,9 +131,9 @@ void OrderedAllVisitor::visit(ShPtr<AssignStmt> stmt) {
 
 void OrderedAllVisitor::visit(ShPtr<VarDefStmt> stmt) {
 	lastStmt = stmt;
-	VISIT_THIS(Variable::accept, stmt->getVar())
+	VISIT_THIS(stmt->getVar())
 	if (ShPtr<Expression> init = stmt->getInitializer()) {
-		VISIT_THIS(Expression::accept, init)
+		VISIT_THIS(init)
 	}
 	if (visitSuccessors && stmt->hasSuccessor()) {
 		visitStmt(stmt->getSuccessor());
@@ -142,7 +142,7 @@ void OrderedAllVisitor::visit(ShPtr<VarDefStmt> stmt) {
 
 void OrderedAllVisitor::visit(ShPtr<CallStmt> stmt) {
 	lastStmt = stmt;
-	VISIT_THIS(CallExpr::accept, stmt->getCall())
+	VISIT_THIS(stmt->getCall())
 	if (visitSuccessors && stmt->hasSuccessor()) {
 		visitStmt(stmt->getSuccessor());
 	}
@@ -151,7 +151,7 @@ void OrderedAllVisitor::visit(ShPtr<CallStmt> stmt) {
 void OrderedAllVisitor::visit(ShPtr<ReturnStmt> stmt) {
 	lastStmt = stmt;
 	if (ShPtr<Expression> retVal = stmt->getRetVal()) {
-		VISIT_THIS(Expression::accept, retVal)
+		VISIT_THIS(retVal)
 	}
 	if (visitSuccessors && stmt->hasSuccessor()) {
 		visitStmt(stmt->getSuccessor());
@@ -190,7 +190,7 @@ void OrderedAllVisitor::visit(ShPtr<SwitchStmt> stmt) {
 	// For each clause...
 	for (auto i = stmt->clause_begin(), e = stmt->clause_end(); i != e; ++i) {
 		if (i->first) {
-			VISIT_THIS(Expression::accept, i->first)
+			VISIT_THIS(i->first)
 		}
 		if (visitNestedStmts && i->second) {
 			visitStmt(i->second);
@@ -203,7 +203,7 @@ void OrderedAllVisitor::visit(ShPtr<SwitchStmt> stmt) {
 
 void OrderedAllVisitor::visit(ShPtr<WhileLoopStmt> stmt) {
 	lastStmt = stmt;
-	VISIT_THIS(Expression::accept, stmt->getCondition())
+	VISIT_THIS(stmt->getCondition())
 	if (visitNestedStmts) {
 		visitStmt(stmt->getBody());
 	}
@@ -215,10 +215,10 @@ void OrderedAllVisitor::visit(ShPtr<WhileLoopStmt> stmt) {
 void OrderedAllVisitor::visit(ShPtr<ForLoopStmt> stmt) {
 	lastStmt = stmt;
 
-	VISIT_THIS(Variable::accept, stmt->getIndVar())
-	VISIT_THIS(Expression::accept, stmt->getStartValue())
-	VISIT_THIS(Expression::accept, stmt->getEndCond())
-	VISIT_THIS(Expression::accept, stmt->getStep())
+	VISIT_THIS(stmt->getIndVar())
+	VISIT_THIS(stmt->getStartValue())
+	VISIT_THIS(stmt->getEndCond())
+	VISIT_THIS(stmt->getStep())
 	if (visitNestedStmts) {
 		visitStmt(stmt->getBody());
 	}
@@ -230,15 +230,15 @@ void OrderedAllVisitor::visit(ShPtr<ForLoopStmt> stmt) {
 void OrderedAllVisitor::visit(ShPtr<UForLoopStmt> stmt) {
 	lastStmt = stmt;
 	if (auto init = stmt->getInit()) {
-		VISIT_THIS(Expression::accept, stmt->getInit())
+		VISIT_THIS(stmt->getInit())
 		init->accept(this);
 	}
 	if (auto cond = stmt->getCond()) {
-		VISIT_THIS(Expression::accept, stmt->getCond())
+		VISIT_THIS(stmt->getCond())
 		cond->accept(this);
 	}
 	if (auto step = stmt->getStep()) {
-		VISIT_THIS(Expression::accept, stmt->getStep())
+		VISIT_THIS(stmt->getStep())
 	}
 	if (visitNestedStmts) {
 		visitStmt(stmt->getBody());
@@ -282,146 +282,146 @@ void OrderedAllVisitor::visit(ShPtr<UnreachableStmt> stmt) {
 //
 
 void OrderedAllVisitor::visit(ShPtr<AddressOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<AssignOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<ArrayIndexOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<StructIndexOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<DerefOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<NotOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<NegOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<EqOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<NeqOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<LtEqOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<GtEqOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<LtOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<GtOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<AddOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<SubOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<MulOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<ModOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<DivOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<AndOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<OrOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<BitAndOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<BitOrOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<BitXorOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<BitShlOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<BitShrOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<TernaryOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getCondition())
-	VISIT_THIS(Expression::accept, expr->getTrueValue())
-	VISIT_THIS(Expression::accept, expr->getFalseValue())
+	VISIT_THIS(expr->getCondition())
+	VISIT_THIS(expr->getTrueValue())
+	VISIT_THIS(expr->getFalseValue())
 }
 
 void OrderedAllVisitor::visit(ShPtr<CallExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getCalledExpr())
+	VISIT_THIS(expr->getCalledExpr())
 	expr->getCalledExpr()->accept(this);
 
 	// For each argument...
 	for (const auto &arg : expr->getArgs()) {
-		VISIT_THIS(Expression::accept, arg)
+		VISIT_THIS(arg)
 		arg->accept(this);
 	}
 }
 
 void OrderedAllVisitor::visit(ShPtr<CommaOpExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getFirstOperand())
-	VISIT_THIS(Expression::accept, expr->getSecondOperand())
+	VISIT_THIS(expr->getFirstOperand())
+	VISIT_THIS(expr->getSecondOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<Variable> var) {}
@@ -431,31 +431,31 @@ void OrderedAllVisitor::visit(ShPtr<Variable> var) {}
 //
 
 void OrderedAllVisitor::visit(ShPtr<BitCastExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<ExtCastExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<TruncCastExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<FPToIntCastExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<IntToFPCastExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<IntToPtrCastExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 void OrderedAllVisitor::visit(ShPtr<PtrToIntCastExpr> expr) {
-	VISIT_THIS(Expression::accept, expr->getOperand())
+	VISIT_THIS(expr->getOperand())
 }
 
 //
@@ -475,20 +475,20 @@ void OrderedAllVisitor::visit(ShPtr<ConstString> constant) {}
 void OrderedAllVisitor::visit(ShPtr<ConstArray> constant) {
 	if (constant->isInitialized()) {
 		for (const auto &element : constant->getInitializedValue()) {
-			VISIT_THIS(Expression::accept, element)
+			VISIT_THIS(element)
 		}
 	}
 }
 
 void OrderedAllVisitor::visit(ShPtr<ConstStruct> constant) {
 	for (const auto &member : constant->getValue()) {
-		VISIT_THIS(ConstInt::accept, member.first)
-		VISIT_THIS(Expression::accept, member.second)
+		VISIT_THIS(member.first)
+		VISIT_THIS(member.second)
 	}
 }
 
 void OrderedAllVisitor::visit(ShPtr<ConstSymbol> constant) {
-	VISIT_THIS(Constant::accept, constant->getValue())
+	VISIT_THIS(constant->getValue())
 }
 
 //
@@ -508,7 +508,7 @@ void OrderedAllVisitor::visit(ShPtr<IntType> type) {
 }
 
 void OrderedAllVisitor::visit(ShPtr<PointerType> type) {
-	VISIT_THIS(Type::accept, type->getContainedType())
+	VISIT_THIS(type->getContainedType())
 	if (makeAccessedAndCheckIfAccessed(type)) {
 		return;
 	}
@@ -524,7 +524,7 @@ void OrderedAllVisitor::visit(ShPtr<ArrayType> type) {
 	if (makeAccessedAndCheckIfAccessed(type)) {
 		return;
 	}
-	VISIT_THIS(Type::accept, type->getContainedType())
+	VISIT_THIS(type->getContainedType())
 }
 
 void OrderedAllVisitor::visit(ShPtr<StructType> type) {
@@ -534,7 +534,7 @@ void OrderedAllVisitor::visit(ShPtr<StructType> type) {
 
 	const StructType::ElementTypes &elements(type->getElementTypes());
 	for (StructType::ElementTypes::size_type i = 0, e = elements.size(); i < e; ++i) {
-		VISIT_THIS(Type::accept, elements[i])
+		VISIT_THIS(elements[i])
 	}
 }
 
@@ -544,11 +544,11 @@ void OrderedAllVisitor::visit(ShPtr<FunctionType> type) {
 	}
 
 	// Return type.
-	VISIT_THIS(Type::accept, type->getRetType())
+	VISIT_THIS(type->getRetType())
 
 	// Argument types.
 	for (auto i = type->param_begin(), e = type->param_end(); i != e; ++i) {
-		VISIT_THIS(Type::accept, (*i))
+		VISIT_THIS((*i))
 	}
 }
 
@@ -584,7 +584,7 @@ void OrderedAllVisitor::visitStmt(ShPtr<Statement> stmt, bool visitSuccessors,
 		this->visitSuccessors = visitSuccessors;
 		this->visitNestedStmts = visitNestedStmts;
 		accessedStmts.insert(stmt);
-		VISIT_THIS(Statement::accept, stmt)
+		VISIT_THIS(stmt)
 	}
 }
 

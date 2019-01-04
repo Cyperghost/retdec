@@ -29,11 +29,11 @@ void VisitorManagerWorker::init(unsigned cores) {
 }
 
 void VisitorManagerWorker::doWork() {
-	std::pair<Visitor *, std::function<void(Visitor *)>> result;
+	std::pair<Visitor *, ShPtr<Visitable>> result;
 	bool success = queue.pop(result);
 	while (!stopped) {
 		while (success) {
-			(result.second)(result.first);
+			(result.second)->accept(result.first);
 			if (!stopped) {
 				return;
 			} else {
@@ -57,7 +57,7 @@ void VisitorManagerWorker::doWork() {
 	}
 }
 
-void VisitorManagerWorker::push(Visitor *var, std::function<void(Visitor *)> func) {
+void VisitorManagerWorker::push(Visitor *var, ShPtr<Visitable> func) {
 	queue.push(std::make_pair(var, func));
 	std::unique_lock<std::mutex> lock(mutex);
 	completed = false;

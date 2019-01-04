@@ -11,10 +11,10 @@
 #include <queue>
 #include "retdec/llvmir2hll/support/visitable.h"
 #include "retdec/llvmir2hll/support/singleton.h"
+#include "retdec/llvmir2hll/support/smart_ptr.h"
 
-#define VISIT(param, func, obj) VisitorManager::getInstance().push(param, std::bind \
-(&func, obj, _1));
-#define VISIT_THIS(func, obj) VISIT(this, func,obj)
+#define VISIT(param, obj) VisitorManager::getInstance().push(param, obj);
+#define VISIT_THIS(obj) VISIT(this,obj)
 
 namespace retdec {
 namespace llvmir2hll {
@@ -71,7 +71,7 @@ public:
 	 * @brief Clear the queue and free the pointer
 	 */
 	virtual void clear() {
-		std::pair<Visitor *, std::function<void(Visitor *)>> pair;
+		std::pair<Visitor *, ShPtr<Visitable>> pair;
 		while (queue.pop(pair));
 	}
 
@@ -94,7 +94,7 @@ public:
 	/**
 	 * @brief Insert a task that should be completed
 	 */
-	virtual void push(Visitor * var, std::function<void(Visitor *)> func);
+	virtual void push(Visitor * var, ShPtr<Visitable> func);
 
 protected:
 	/**
@@ -112,7 +112,7 @@ protected:
 	Queue<
 			std::pair<
 					Visitor *,
-					std::function<void(Visitor *)>
+					ShPtr<Visitable>
 			>
 	> queue;
 	unsigned cores;
