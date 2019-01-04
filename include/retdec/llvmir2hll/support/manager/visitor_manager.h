@@ -1,5 +1,5 @@
 /**
-* @file include/retdec/llvmir2hll/support/visitors/visitor_manager.h
+* @file include/retdec/llvmir2hll/support/manager/visitor_manager.h
 * @brief A manager for the visitor, that visits everything, in multiply threads
 */
 
@@ -9,7 +9,12 @@
 #include <thread>
 #include <vector>
 #include <queue>
-#include <retdec/llvmir2hll/support/visitable.h>
+#include "retdec/llvmir2hll/support/visitable.h"
+#include "retdec/llvmir2hll/support/singleton.h"
+
+#define VISIT(param, func, obj) VisitorManager::getInstance().push(param, std::bind \
+(&func, obj, _1));
+#define VISIT_THIS(func, obj) VISIT(this, func,obj)
 
 namespace retdec {
 namespace llvmir2hll {
@@ -52,13 +57,13 @@ private:
 /**
  * @brief A visitor manager handle the visit calls in multiply threads
  */
-class VisitorManager {
+class VisitorManagerWorker {
 public:
-	VisitorManager();
+	VisitorManagerWorker();
 
-	VisitorManager(unsigned cores);
+	VisitorManagerWorker(unsigned cores);
 
-	virtual ~VisitorManager() {
+	virtual ~VisitorManagerWorker() {
 		stop(false);
 	}
 
@@ -66,9 +71,8 @@ public:
 	 * @brief Clear the queue and free the pointer
 	 */
 	virtual void clear() {
-		std::pair<Visitable *, std::function<void(Visitable *)> *> pair;
-		while (queue.pop(pair))
-			delete pair.second; // free function pointer, but not the element!
+		std::pair<Visitor *, std::function<void(Visitor *)>> pair;
+		while (queue.pop(pair));
 	}
 
 	/**
@@ -90,7 +94,7 @@ public:
 	/**
 	 * @brief Insert a task that should be completed
 	 */
-	virtual void push(Visitable * var, std::function<void(Visitable *)> * func);
+	virtual void push(Visitor * var, std::function<void(Visitor *)> func);
 
 protected:
 	/**
@@ -107,8 +111,8 @@ protected:
 	//the queue with our function and the parameter that we will call
 	Queue<
 			std::pair<
-					Visitable *,
-					std::function<void(Visitable *)> *
+					Visitor *,
+					std::function<void(Visitor *)>
 			>
 	> queue;
 	unsigned cores;
@@ -118,14 +122,16 @@ protected:
 	std::condition_variable cvComplete, cv;
 private:
 	// this function should not call
-	VisitorManager(const VisitorManager &) = delete;
+	VisitorManagerWorker(const VisitorManagerWorker &) = delete;
 
-	VisitorManager(VisitorManager &&) = delete;
+	VisitorManagerWorker(VisitorManagerWorker &&) = delete;
 
-	VisitorManager &operator=(const VisitorManager &) = delete;
+	VisitorManagerWorker &operator=(const VisitorManagerWorker &) = delete;
 
-	VisitorManager &operator=(VisitorManager &&) = delete;
+	VisitorManagerWorker &operator=(VisitorManagerWorker &&) = delete;
 };
+
+using VisitorManager = Singleton<VisitorManagerWorker>;
 } // namespace llvmir2hll
 } // namespace retdec
 

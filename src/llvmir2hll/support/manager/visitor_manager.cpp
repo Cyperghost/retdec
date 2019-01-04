@@ -4,21 +4,20 @@
 */
 
 #include <retdec/llvmir2hll/support/manager/visitor_manager.h>
-#include <iostream>
 
 namespace retdec {
 namespace llvmir2hll {
 
 
-VisitorManager::VisitorManager() {
+VisitorManagerWorker::VisitorManagerWorker() {
 	init(std::thread::hardware_concurrency());
 }
 
-VisitorManager::VisitorManager(unsigned cores) {
+VisitorManagerWorker::VisitorManagerWorker(unsigned cores) {
 	init(cores);
 }
 
-void VisitorManager::init(unsigned cores) {
+void VisitorManagerWorker::init(unsigned cores) {
 	this->cores = cores;
 	for (unsigned i = 0; i < cores; i++) {
 		threads.push_back(std::thread(
@@ -29,14 +28,12 @@ void VisitorManager::init(unsigned cores) {
 	}
 }
 
-void VisitorManager::doWork() {
-	std::pair<Visitable *, std::function<void(Visitable *)> *> result;
+void VisitorManagerWorker::doWork() {
+	std::pair<Visitor *, std::function<void(Visitor *)>> result;
 	bool success = queue.pop(result);
 	while (!stopped) {
 		while (success) {
-			// will free the pointer automatically
-			std::unique_ptr<std::function<void(Visitable *)>> uniquePtr(result.second);
-			(*result.second)(result.first);
+			(result.second)(result.first);
 			if (!stopped) {
 				return;
 			} else {
@@ -60,14 +57,14 @@ void VisitorManager::doWork() {
 	}
 }
 
-void VisitorManager::push(Visitable *var, std::function<void(Visitable *)> *func) {
+void VisitorManagerWorker::push(Visitor *var, std::function<void(Visitor *)> func) {
 	queue.push(std::make_pair(var, func));
 	std::unique_lock<std::mutex> lock(mutex);
 	completed = false;
 	cv.notify_one();
 }
 
-void VisitorManager::stop(bool wait) {
+void VisitorManagerWorker::stop(bool wait) {
 	if (!wait) {
 		if (stopped) {
 			return;
