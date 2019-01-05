@@ -50,6 +50,7 @@
 #include "retdec/llvmir2hll/ir/variable.h"
 #include "retdec/llvmir2hll/support/debug.h"
 #include "retdec/llvmir2hll/support/expression_negater.h"
+#include "retdec/llvmir2hll/support/manager/visitor_manager.h"
 
 namespace retdec {
 namespace llvmir2hll {
@@ -57,7 +58,7 @@ namespace llvmir2hll {
 /**
 * @brief Constructs a new expression negater.
 */
-ExpressionNegater::ExpressionNegater(): Visitor() {}
+ExpressionNegater::ExpressionNegater() : Visitor() {}
 
 /**
 * @brief Destructs the negater.
@@ -92,7 +93,7 @@ ShPtr<Expression> ExpressionNegater::negate(ShPtr<Expression> expr) {
 ShPtr<Expression> ExpressionNegater::negateInternal(ShPtr<Expression> expr) {
 	PRECONDITION_NON_NULL(expr);
 
-	expr->accept(this);
+	VISIT_THIS(expr);
 	return exprStack.top();
 }
 
@@ -176,11 +177,11 @@ void ExpressionNegater::visit(ShPtr<DivOpExpr> expr) {
 
 void ExpressionNegater::visit(ShPtr<AndOpExpr> expr) {
 	// Use De-Morgan laws.
-	expr->getFirstOperand()->accept(this);
+	VISIT_THIS(expr->getFirstOperand());
 	ShPtr<Expression> firstOperandNegated(exprStack.top());
 	exprStack.pop();
 
-	expr->getSecondOperand()->accept(this);
+	VISIT_THIS(expr->getSecondOperand());
 	ShPtr<Expression> secondOperandNegated(exprStack.top());
 	exprStack.pop();
 
@@ -189,11 +190,11 @@ void ExpressionNegater::visit(ShPtr<AndOpExpr> expr) {
 
 void ExpressionNegater::visit(ShPtr<OrOpExpr> expr) {
 	// Use De-Morgan laws.
-	expr->getFirstOperand()->accept(this);
+	VISIT_THIS(expr->getFirstOperand());
 	ShPtr<Expression> firstOperandNegated(exprStack.top());
 	exprStack.pop();
 
-	expr->getSecondOperand()->accept(this);
+	VISIT_THIS(expr->getSecondOperand());
 	ShPtr<Expression> secondOperandNegated(exprStack.top());
 	exprStack.pop();
 

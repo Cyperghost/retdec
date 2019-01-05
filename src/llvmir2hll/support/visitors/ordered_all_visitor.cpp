@@ -169,7 +169,7 @@ void OrderedAllVisitor::visit(ShPtr<IfStmt> stmt) {
 	lastStmt = stmt;
 	// For each clause...
 	for (auto i = stmt->clause_begin(), e = stmt->clause_end(); i != e; ++i) {
-		i->first->accept(this);
+VISIT_THIS(		i->first);
 		if (visitNestedStmts) {
 			visitStmt(i->second);
 		}
@@ -185,7 +185,7 @@ void OrderedAllVisitor::visit(ShPtr<IfStmt> stmt) {
 
 void OrderedAllVisitor::visit(ShPtr<SwitchStmt> stmt) {
 	lastStmt = stmt;
-	stmt->getControlExpr()->accept(this);
+VISIT_THIS(	stmt->getControlExpr());
 
 	// For each clause...
 	for (auto i = stmt->clause_begin(), e = stmt->clause_end(); i != e; ++i) {
@@ -231,11 +231,11 @@ void OrderedAllVisitor::visit(ShPtr<UForLoopStmt> stmt) {
 	lastStmt = stmt;
 	if (auto init = stmt->getInit()) {
 		VISIT_THIS(stmt->getInit())
-		init->accept(this);
+VISIT_THIS(		init);
 	}
 	if (auto cond = stmt->getCond()) {
 		VISIT_THIS(stmt->getCond())
-		cond->accept(this);
+VISIT_THIS(		cond);
 	}
 	if (auto step = stmt->getStep()) {
 		VISIT_THIS(stmt->getStep())
@@ -410,12 +410,12 @@ void OrderedAllVisitor::visit(ShPtr<TernaryOpExpr> expr) {
 
 void OrderedAllVisitor::visit(ShPtr<CallExpr> expr) {
 	VISIT_THIS(expr->getCalledExpr())
-	expr->getCalledExpr()->accept(this);
+VISIT_THIS(	expr->getCalledExpr());
 
 	// For each argument...
 	for (const auto &arg : expr->getArgs()) {
 		VISIT_THIS(arg)
-		arg->accept(this);
+VISIT_THIS(		arg);
 	}
 }
 

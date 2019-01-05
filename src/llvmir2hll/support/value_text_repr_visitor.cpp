@@ -74,6 +74,7 @@
 #include "retdec/llvmir2hll/support/smart_ptr.h"
 #include "retdec/llvmir2hll/support/value_text_repr_visitor.h"
 #include "retdec/llvmir2hll/support/manager/visitor_manager.h"
+#include "retdec/llvmir2hll/support/manager/visitor_manager.h"
 
 namespace retdec {
 namespace llvmir2hll {
@@ -81,8 +82,8 @@ namespace llvmir2hll {
 /**
 * @brief Constructs a new visitor.
 */
-ValueTextReprVisitor::ValueTextReprVisitor():
-	OrderedAllVisitor(), textRepr() {}
+ValueTextReprVisitor::ValueTextReprVisitor() :
+		OrderedAllVisitor(), textRepr() {}
 
 /**
 * @brief Destructs the visitor.
@@ -578,7 +579,7 @@ void ValueTextReprVisitor::visit(ShPtr<SwitchStmt> stmt) {
 		if (i->first) {
 			textRepr << "case ";
 			VISIT_THIS(i->first)
-			textRepr<< ":";
+			textRepr << ":";
 		} else {
 			textRepr << "default:";
 		}
@@ -607,14 +608,14 @@ void ValueTextReprVisitor::visit(ShPtr<ForLoopStmt> stmt) {
 		}
 	}
 	if (!endCondEmitted) {
-		stmt->getEndCond()->accept(this);
+		VISIT_THIS(stmt->getEndCond());
 		VISIT_THIS(stmt->getEndCond())
 	}
 	// Emit step only if it differs from 1.
 	ShPtr<ConstInt> stepInt = cast<ConstInt>(stmt->getStep());
 	if (!stepInt || stepInt->getValue() != 1) {
 		textRepr << ", ";
-		stmt->getStep()->accept(this);
+		VISIT_THIS(stmt->getStep());
 	}
 	textRepr << "):";
 }
@@ -624,15 +625,15 @@ void ValueTextReprVisitor::visit(ShPtr<UForLoopStmt> stmt) {
 	// loops.
 	textRepr << "for (";
 	if (auto init = stmt->getInit()) {
-		init->accept(this);
+		VISIT_THIS(init);
 	}
 	textRepr << "; ";
 	if (auto cond = stmt->getCond()) {
-		cond->accept(this);
+		VISIT_THIS(cond);
 	}
 	textRepr << "; ";
 	if (auto step = stmt->getStep()) {
-		stmt->getStep()->accept(this);
+		VISIT_THIS(stmt->getStep());
 	}
 	textRepr << "):";
 }
@@ -678,7 +679,7 @@ void ValueTextReprVisitor::visit(ShPtr<ArrayType> type) {
 
 void ValueTextReprVisitor::visit(ShPtr<StructType> type) {
 	textRepr << "struct (" <<
-		(type->hasName() ? type->getName() : "anonymous") << ")";
+	         (type->hasName() ? type->getName() : "anonymous") << ")";
 }
 
 void ValueTextReprVisitor::visit(ShPtr<FunctionType> type) {
