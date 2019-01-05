@@ -29,6 +29,7 @@
 #include "retdec/llvmir2hll/optimizer/optimizers/simplify_arithm_expr_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
 #include "retdec/llvmir2hll/support/types.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -67,7 +68,7 @@ void SimplifyArithmExprOptimizer::doOptimization() {
 		do {
 			codeChanged = false;
 			if (ShPtr<Expression> init = (*i)->getInitializer()) {
-				init->accept(this);
+VISIT(				init, this);
 			}
 		} while (codeChanged);
 	}
@@ -79,7 +80,7 @@ void SimplifyArithmExprOptimizer::doOptimization() {
 		do {
 			codeChanged = false;
 			restart();
-			(*i)->accept(this);
+VISIT(			(*i), this);
 		} while (codeChanged);
 	}
 }

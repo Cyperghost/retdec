@@ -88,6 +88,7 @@
 #include "retdec/llvmir2hll/support/smart_ptr.h"
 #include "retdec/llvmir2hll/support/types.h"
 #include "retdec/llvmir2hll/utils/ir.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -168,11 +169,11 @@ bool PyHLLWriter::emitTargetCode(ShPtr<Module> module) {
 void PyHLLWriter::visit(ShPtr<GlobalVarDef> varDef) {
 	out << getCurrentIndent();
 	ShPtr<Variable> var(varDef->getVar());
-	var->accept(this);
+VISIT(	var, this);
 	out << " = ";
 	if (ShPtr<Expression> init = varDef->getInitializer()) {
 		emitConstantsInStructuredWay = true;
-		init->accept(this);
+VISIT(		init, this);
 		emitConstantsInStructuredWay = false;
 	} else {
 		// We have to emit the default initializer for the variable's type
@@ -211,7 +212,7 @@ void PyHLLWriter::visit(ShPtr<ArrayIndexOpExpr> expr) {
 
 	// Access.
 	out << "[";
-	expr->getIndex()->accept(this);
+VISIT(	expr->getIndex(), this);
 	out << "]";
 }
 
@@ -221,7 +222,7 @@ void PyHLLWriter::visit(ShPtr<StructIndexOpExpr> expr) {
 
 	// Access + element.
 	out << "['";
-	expr->getSecondOperand()->accept(this);
+VISIT(	expr->getSecondOperand(), this);
 	out << "']";
 }
 
@@ -266,11 +267,11 @@ void PyHLLWriter::visit(ShPtr<TernaryOpExpr> expr) {
 	if (bracketsAreNeeded) {
 		out << "(";
 	}
-	expr->getTrueValue()->accept(this);
+VISIT(	expr->getTrueValue(), this);
 	out << " if ";
-	expr->getCondition()->accept(this);
+VISIT(	expr->getCondition(), this);
 	out << " else ";
-	expr->getFalseValue()->accept(this);
+VISIT(	expr->getFalseValue(), this);
 	if (bracketsAreNeeded) {
 		out << ")";
 	}
@@ -327,9 +328,9 @@ void PyHLLWriter::visit(ShPtr<BitShrOpExpr> expr) {
 		emitBinaryOpExpr(" >> ", expr);
 	} else {
 		out << "lshr(";
-		expr->getFirstOperand()->accept(this);
+VISIT(		expr->getFirstOperand(), this);
 		out << ", ";
-		expr->getSecondOperand()->accept(this);
+VISIT(		expr->getSecondOperand(), this);
 		out << ")";
 	}
 }
@@ -444,9 +445,9 @@ void PyHLLWriter::visit(ShPtr<ConstStruct> constant) {
 		}
 
 		out << "'";
-		member.first->accept(this);
+VISIT(		member.first, this);
 		out << "': ";
-		member.second->accept(this);
+VISIT(		member.second, this);
 		first = false;
 	}
 
@@ -466,11 +467,11 @@ void PyHLLWriter::visit(ShPtr<AssignStmt> stmt) {
 	CompoundOpManager::CompoundOp compoundOp(
 		compoundOpManager->tryOptimizeToCompoundOp(stmt));
 	out << getCurrentIndent();
-	stmt->getLhs()->accept(this);
+VISIT(	stmt->getLhs(), this);
 	out << " " << compoundOp.getOperator() << " ";
 
 	emitConstantsInStructuredWay = true;
-	compoundOp.getOperand()->accept(this);
+VISIT(	compoundOp.getOperand(), this);
 	emitConstantsInStructuredWay = false;
 
 	out << "\n";
@@ -486,11 +487,11 @@ void PyHLLWriter::visit(ShPtr<VarDefStmt> stmt) {
 	}
 
 	out << getCurrentIndent();
-	stmt->getVar()->accept(this);
+VISIT(	stmt->getVar(), this);
 	out << " = ";
 
 	emitConstantsInStructuredWay = true;
-	init->accept(this);
+VISIT(	init, this);
 	emitConstantsInStructuredWay = false;
 
 	tryEmitVarInfoInComment(stmt->getVar());
@@ -500,7 +501,7 @@ void PyHLLWriter::visit(ShPtr<VarDefStmt> stmt) {
 
 void PyHLLWriter::visit(ShPtr<CallStmt> stmt) {
 	out << getCurrentIndent();
-	stmt->getCall()->accept(this);
+VISIT(	stmt->getCall(), this);
 	out << "\n";
 }
 
@@ -508,7 +509,7 @@ void PyHLLWriter::visit(ShPtr<ReturnStmt> stmt) {
 	out << getCurrentIndent() << "return";
 	if (ShPtr<Expression> retVal = stmt->getRetVal()) {
 		out << " ";
-		retVal->accept(this);
+VISIT(		retVal, this);
 	}
 	out << "\n";
 }
@@ -522,7 +523,7 @@ void PyHLLWriter::visit(ShPtr<IfStmt> stmt) {
 	for (auto i = stmt->clause_begin(), e = stmt->clause_end(); i != e; ++i) {
 		out << getCurrentIndent();
 		out << (i == stmt->clause_begin() ? "if " : "elif ");
-		i->first->accept(this);
+VISIT(		i->first, this);
 		out << ":\n";
 		emitBody(i->second);
 	}
@@ -537,14 +538,14 @@ void PyHLLWriter::visit(ShPtr<IfStmt> stmt) {
 void PyHLLWriter::visit(ShPtr<SwitchStmt> stmt) {
 	out << getCurrentIndent();
 	out << "switch ";
-	stmt->getControlExpr()->accept(this);
+VISIT(	stmt->getControlExpr(), this);
 	out << ":\n";
 	increaseIndentLevel();
 	for (auto i = stmt->clause_begin(), e = stmt->clause_end(); i != e; ++i) {
 		out << getCurrentIndent();
 		if (i->first) {
 			out << "case ";
-			i->first->accept(this);
+VISIT(			i->first, this);
 			out<< ":\n";
 			emitBlock(i->second);
 		} else {
@@ -557,35 +558,35 @@ void PyHLLWriter::visit(ShPtr<SwitchStmt> stmt) {
 
 void PyHLLWriter::visit(ShPtr<WhileLoopStmt> stmt) {
 	out << getCurrentIndent() << "while ";
-	stmt->getCondition()->accept(this);
+VISIT(	stmt->getCondition(), this);
 	out << ":\n";
 	emitBody(stmt->getBody());
 }
 
 void PyHLLWriter::visit(ShPtr<ForLoopStmt> stmt) {
 	out << getCurrentIndent() << "for ";
-	stmt->getIndVar()->accept(this);
+VISIT(	stmt->getIndVar(), this);
 	out << " in range(";
-	stmt->getStartValue()->accept(this);
+VISIT(	stmt->getStartValue(), this);
 	out << ", ";
 	// If the end condition is of the form `i < x`, emit just `x`, otherwise
 	// emit the complete condition.
 	bool endCondEmitted = false;
 	if (ShPtr<LtOpExpr> ltEndCond = cast<LtOpExpr>(stmt->getEndCond())) {
 		if (stmt->getIndVar() == ltEndCond->getFirstOperand()) {
-			ltEndCond->getSecondOperand()->accept(this);
+VISIT(			ltEndCond->getSecondOperand(), this);
 			endCondEmitted = true;
 		}
 	}
 	if (!endCondEmitted) {
 		// TODO How to make this more pythonic?
-		stmt->getEndCond()->accept(this);
+VISIT(		stmt->getEndCond(), this);
 	}
 	// Emit step only if it differs from 1.
 	ShPtr<ConstInt> stepInt = cast<ConstInt>(stmt->getStep());
 	if (!stepInt || stepInt->getValue() != 1) {
 		out << ", ";
-		stmt->getStep()->accept(this);
+VISIT(		stmt->getStep(), this);
 	}
 	out << "):\n";
 	emitBody(stmt->getBody());
@@ -657,7 +658,7 @@ void PyHLLWriter::visit(ShPtr<StructType> type) {
 		out << "'";
 		out << structElementIndex++;
 		out << "': ";
-		elementType->accept(this);
+VISIT(		elementType, this);
 		first = false;
 	}
 	out << "}";
@@ -702,7 +703,7 @@ void PyHLLWriter::emitBlock(ShPtr<Statement> stmt) {
 			emitDebugComment(metadata);
 		}
 
-		stmt->accept(this);
+VISIT(		stmt, this);
 		stmt = stmt->getSuccessor();
 	} while (stmt);
 
@@ -764,7 +765,7 @@ void PyHLLWriter::emitGlobalDirectives(ShPtr<Function> func) {
 	for (const auto &var : writtenGlobalsVector) {
 		// Emit the directive.
 		out << getCurrentIndent() << "global ";
-		var->accept(this);
+VISIT(		var, this);
 		out << "\n";
 	}
 
@@ -796,7 +797,7 @@ void PyHLLWriter::emitDebugComment(std::string comment, bool indent) {
 * @brief Emits the default initializer for the given type.
 */
 void PyHLLWriter::emitDefaultInitializer(ShPtr<Type> type) {
-	type->accept(this);
+VISIT(	type, this);
 }
 
 /**
@@ -887,7 +888,7 @@ void PyHLLWriter::emitUninitializedConstArray(ShPtr<ConstArray> array) {
 * @brief Emits the operand of the given cast.
 */
 void PyHLLWriter::emitOperandOfCast(ShPtr<CastExpr> expr) {
-	expr->getOperand()->accept(this);
+VISIT(	expr->getOperand(), this);
 }
 
 /**

@@ -7,6 +7,7 @@
 #include "retdec/llvmir2hll/ir/call_expr.h"
 #include "retdec/llvmir2hll/obtainer/calls_obtainer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -46,7 +47,7 @@ CallVector CallsObtainer::getCalls(ShPtr<Value> value) {
 	PRECONDITION_NON_NULL(value);
 
 	ShPtr<CallsObtainer> obtainer(new CallsObtainer());
-	value->accept(obtainer.get());
+VISIT(	value, obtainer.get());
 	return obtainer->foundCalls;
 }
 

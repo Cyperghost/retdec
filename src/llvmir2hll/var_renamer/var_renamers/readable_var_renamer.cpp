@@ -25,6 +25,7 @@
 #include "retdec/utils/array.h"
 #include "retdec/utils/container.h"
 #include "retdec/utils/conversion.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 using namespace std::string_literals;
 
@@ -39,7 +40,7 @@ namespace {
 
 /// Available names for induction variables.
 const char *IND_VAR_NAMES[] = {
-	"i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"
+		"i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w"
 };
 
 /// Number of available induction variables.
@@ -51,7 +52,7 @@ const std::string RETURN_VAR_NAME = "result";
 } // anonymous namespace
 
 REGISTER_AT_FACTORY("readable", READABLE_VAR_RENAMER_ID, VarRenamerFactory,
-	ReadableVarRenamer::create);
+                    ReadableVarRenamer::create);
 
 /**
 * @brief Constructs a new renamer.
@@ -59,14 +60,21 @@ REGISTER_AT_FACTORY("readable", READABLE_VAR_RENAMER_ID, VarRenamerFactory,
 * For more details, see create().
 */
 ReadableVarRenamer::ReadableVarRenamer(ShPtr<VarNameGen> varNameGen,
-	bool useDebugNames): VarRenamer(varNameGen, useDebugNames),
-		globalVarNameGen(NumVarNameGen::create("g")),
-		localVarNameGen(NumVarNameGen::create("v")),
-		indVarsNamesInCurrFunc(),
-		renamingInductionVars(false),
-		renamingReturnVars(false),
-		renamingResultsOfWellKnownFuncs(false),
-		renamingArgsOfWellKnownFuncs(false) {}
+                                       bool useDebugNames) : VarRenamer(varNameGen,
+                                                                        useDebugNames),
+                                                             globalVarNameGen(
+		                                                             NumVarNameGen::create(
+				                                                             "g")),
+                                                             localVarNameGen(
+		                                                             NumVarNameGen::create(
+				                                                             "v")),
+                                                             indVarsNamesInCurrFunc(),
+                                                             renamingInductionVars(false),
+                                                             renamingReturnVars(false),
+                                                             renamingResultsOfWellKnownFuncs(
+		                                                             false),
+                                                             renamingArgsOfWellKnownFuncs(
+		                                                             false) {}
 
 /**
 * @brief Creates a new renamer.
@@ -80,7 +88,7 @@ ReadableVarRenamer::ReadableVarRenamer(ShPtr<VarNameGen> varNameGen,
 *  - @a varNameGen is non-null
 */
 ShPtr<VarRenamer> ReadableVarRenamer::create(ShPtr<VarNameGen> varNameGen,
-		bool useDebugNames) {
+                                             bool useDebugNames) {
 	PRECONDITION_NON_NULL(varNameGen);
 
 	return ShPtr<VarRenamer>(new ReadableVarRenamer(varNameGen, useDebugNames));
@@ -109,14 +117,14 @@ void ReadableVarRenamer::renameVarsInFunc(ShPtr<Function> func) {
 }
 
 void ReadableVarRenamer::renameFuncParam(ShPtr<Variable> var,
-		ShPtr<Function> func) {
+                                         ShPtr<Function> func) {
 	PRECONDITION_NON_NULL(var);
 
 	assignName(var, genNameForFuncParam(var, func), func);
 }
 
 void ReadableVarRenamer::renameFuncLocalVar(ShPtr<Variable> var,
-		ShPtr<Function> func) {
+                                            ShPtr<Function> func) {
 	PRECONDITION_NON_NULL(var);
 
 	assignName(var, localVarNameGen->getNextVarName(), func);
@@ -127,7 +135,7 @@ void ReadableVarRenamer::renameFuncLocalVar(ShPtr<Variable> var,
 */
 void ReadableVarRenamer::visitSubsequentStmts(ShPtr<Statement> stmt) {
 	if (stmt->hasSuccessor()) {
-		stmt->getSuccessor()->accept(this);
+		VISIT(stmt->getSuccessor(), this);
 	}
 }
 
@@ -145,7 +153,7 @@ void ReadableVarRenamer::visitFuncBody(ShPtr<Function> func) {
 
 	currFunc = func;
 	restart();
-	body->accept(this);
+	VISIT(body, this);
 }
 
 /**
@@ -190,9 +198,9 @@ void ReadableVarRenamer::renameInductionVars(ShPtr<Function> func) {
 * @brief Renames the given induction variable in the given function.
 */
 void ReadableVarRenamer::renameInductionVar(ShPtr<Variable> var,
-		ShPtr<Function> func) {
+                                            ShPtr<Function> func) {
 	renameVarByChoosingNameFromList(var, currFunc, &IND_VAR_NAMES[0],
-		NUM_OF_AVAIL_IND_VAR_NAMES);
+	                                NUM_OF_AVAIL_IND_VAR_NAMES);
 }
 
 /**
@@ -245,7 +253,9 @@ void ReadableVarRenamer::renameOtherLocalVars(ShPtr<Function> func) {
 * but a suffix is appended to it.
 */
 void ReadableVarRenamer::renameVarByChoosingNameFromList(ShPtr<Variable> var,
-		ShPtr<Function> func, const char **names, std::size_t numOfAvailNames) {
+                                                         ShPtr<Function> func,
+                                                         const char **names,
+                                                         std::size_t numOfAvailNames) {
 	// Choose a new name for the variable.
 	std::string newName;
 	for (std::size_t i = 0, e = numOfAvailNames; i < e; ++i) {
@@ -279,7 +289,7 @@ void ReadableVarRenamer::renameVarByChoosingNameFromList(ShPtr<Variable> var,
 void ReadableVarRenamer::tryRenameVarStoringCallResult(ShPtr<Statement> stmt) {
 	PRECONDITION_NON_NULL(stmt);
 	PRECONDITION(isVarDefOrAssignStmt(stmt), "the statement " << stmt <<
-		"is not a variable-defining statement or an assign statement");
+	                                                          "is not a variable-defining statement or an assign statement");
 
 	ShPtr<Variable> lhsVar(cast<Variable>(getLhs(stmt)));
 	if (!lhsVar || hasBeenRenamed(lhsVar) || isGlobalVar(lhsVar)) {
@@ -297,7 +307,7 @@ void ReadableVarRenamer::tryRenameVarStoringCallResult(ShPtr<Statement> stmt) {
 	}
 
 	Maybe<std::string> newName(module->getSemantics()->getNameOfVarStoringResult(
-		calledFunc->getName()));
+			calledFunc->getName()));
 	if (newName) {
 		assignName(lhsVar, newName.get(), currFunc);
 	}
@@ -346,7 +356,7 @@ void ReadableVarRenamer::tryRenameVarPassedAsArgToFuncCall(
 	}
 
 	Maybe<std::string> newName(module->getSemantics()->getNameOfParam(
-		calledFunc->getName(), argPos));
+			calledFunc->getName(), argPos));
 	if (newName) {
 		assignName(var, newName.get(), currFunc);
 	}
@@ -504,8 +514,8 @@ void ReadableVarRenamer::visit(ShPtr<Variable> var) {
 	}
 
 	if (renamingInductionVars || renamingReturnVars ||
-			renamingResultsOfWellKnownFuncs ||
-			renamingArgsOfWellKnownFuncs) {
+	    renamingResultsOfWellKnownFuncs ||
+	    renamingArgsOfWellKnownFuncs) {
 		// These renames are handled in other functions.
 		return;
 	}

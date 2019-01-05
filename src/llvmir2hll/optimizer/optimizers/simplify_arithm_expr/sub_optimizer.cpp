@@ -11,6 +11,7 @@
 #include "retdec/llvmir2hll/ir/sub_op_expr.h"
 #include "retdec/llvmir2hll/optimizer/optimizers/simplify_arithm_expr/sub_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -71,7 +72,7 @@ void SubOptimizer::optimizeExpr(ShPtr<Expression> oldExpr,
 */
 bool SubOptimizer::tryOptimizeAndReturnIfCodeChanged(ShPtr<Expression> expr) {
 	codeChanged = false;
-	expr->accept(this);
+	VISIT(expr, this);
 	return codeChanged;
 }
 

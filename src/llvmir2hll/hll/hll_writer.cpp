@@ -37,6 +37,7 @@
 #include "retdec/utils/conversion.h"
 #include "retdec/utils/string.h"
 #include "retdec/utils/time.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 using namespace std::string_literals;
 
@@ -522,12 +523,12 @@ bool HLLWriter::emitGlobalVariables() {
 * @par Preconditions
 *  - @a varDef is non-null
 *
-* By default (if it is not overridden), it calls @c varDef->accept(this) and
+VISIT(* By default (if it is not overridden), it calls @c varDef, this) and
 * returns @c true.
 */
 bool HLLWriter::emitGlobalVariable(ShPtr<GlobalVarDef> varDef) {
 	emitDetectedCryptoPatternForGlobalVarIfAvailable(varDef->getVar());
-	varDef->accept(this);
+	VISIT(	varDef, this);
 	return true;
 }
 
@@ -616,7 +617,7 @@ bool HLLWriter::emitFunctions() {
 * @param[in] func Function to be emitted.
 *
 * By default, it emits information about @a func (like address range, module,
-* etc., if available), and then calls @c func->accept(this).
+VISIT(* etc., if available), and then calls @c func, this).
 *
 * @par Preconditions
 *  - @a func is non-null
@@ -640,7 +641,7 @@ bool HLLWriter::emitFunction(ShPtr<Function> func) {
 	// signature. IDA plugin relies on that.
 	emitCommentIfAvailable(func);
 
-	func->accept(this);
+	VISIT(	func, this);
 
 	currFunc.reset();
 
@@ -888,7 +889,7 @@ void HLLWriter::emitExprWithBracketsIfNeeded(ShPtr<Expression> expr) {
 	if (bracketsAreNeeded) {
 		out << "(";
 	}
-	expr->accept(this);
+VISIT(	expr, this);
 	if (bracketsAreNeeded) {
 		out << ")";
 	}
@@ -924,9 +925,9 @@ void HLLWriter::emitBinaryOpExpr(const std::string &opRepr,
 	if (bracketsAreNeeded) {
 		out << "(";
 	}
-	expr->getFirstOperand()->accept(this);
+	VISIT(	expr->getFirstOperand(), this);
 	out << opRepr;
-	expr->getSecondOperand()->accept(this);
+	VISIT(	expr->getSecondOperand(), this);
 	if (bracketsAreNeeded) {
 		out << ")";
 	}

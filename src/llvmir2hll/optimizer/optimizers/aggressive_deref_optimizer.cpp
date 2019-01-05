@@ -12,6 +12,7 @@
 #include "retdec/llvmir2hll/optimizer/optimizers/aggressive_deref_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
 #include "retdec/llvmir2hll/utils/ir.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -41,9 +42,9 @@ AggressiveDerefOptimizer::~AggressiveDerefOptimizer() {}
 void AggressiveDerefOptimizer::tryToOptimizeStmt(ShPtr<Statement> stmt,
 		ShPtr<Expression> lhs, ShPtr<Expression> rhs) {
 	intDerefFound = false;
-	lhs->accept(this);
+	VISIT(lhs, this);
 	if (!intDerefFound && rhs) {
-		rhs->accept(this);
+		VISIT(rhs, this);
 	}
 	if (intDerefFound) {
 		Statement::removeStatementButKeepDebugComment(stmt);

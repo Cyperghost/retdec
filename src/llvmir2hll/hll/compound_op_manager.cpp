@@ -21,6 +21,7 @@
 #include "retdec/llvmir2hll/ir/sub_op_expr.h"
 #include "retdec/llvmir2hll/ir/variable.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -169,7 +170,7 @@ CompoundOpManager::CompoundOp CompoundOpManager::tryOptimizeToCompoundOp(
 	lhsOfAssignStmt = lhs;
 
 	// Analyze the right-hand side of AssignStmt.
-	rhs->accept(this);
+	VISIT(	rhs, this);
 
 	return compoundOp;
 }

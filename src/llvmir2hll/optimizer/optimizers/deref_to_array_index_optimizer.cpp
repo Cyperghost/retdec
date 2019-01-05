@@ -17,6 +17,7 @@
 #include "retdec/llvmir2hll/ir/variable.h"
 #include "retdec/llvmir2hll/optimizer/optimizers/deref_to_array_index_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -43,13 +44,13 @@ void DerefToArrayIndexOptimizer::doOptimization() {
 	// Visit all global variables and their initializers.
 	for (auto i = module->global_var_begin(), e = module->global_var_end();
 			i != e; ++i) {
-		(*i)->accept(this);
+VISIT(		(*i), this);
 	}
 
 	// Visit all functions.
 	for (auto i = module->func_definition_begin(),
 			e = module->func_definition_end(); i != e; ++i) {
-		(*i)->accept(this);
+VISIT(		(*i), this);
 	}
 }
 

@@ -8,6 +8,7 @@
 #include "retdec/llvmir2hll/ir/deref_op_expr.h"
 #include "retdec/llvmir2hll/optimizer/optimizers/deref_address_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -31,7 +32,7 @@ DerefAddressOptimizer::DerefAddressOptimizer(ShPtr<Module> module):
 DerefAddressOptimizer::~DerefAddressOptimizer() {}
 
 void DerefAddressOptimizer::visit(ShPtr<DerefOpExpr> expr) {
-	expr->getOperand()->accept(this);
+VISIT(	expr->getOperand(), this);
 
 	// Check whether we're dereferencing an address operator. If so, then
 	// remove these two dereference+address operators.

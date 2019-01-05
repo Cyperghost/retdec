@@ -20,6 +20,7 @@
 #include "retdec/llvmir2hll/ir/while_loop_stmt.h"
 #include "retdec/llvmir2hll/optimizer/optimizers/bit_op_to_log_op_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -175,7 +176,7 @@ bool BitOpToLogOpOptimizer::canBeBitOrBitAndOptimized(ShPtr<Expression> expr) {
 
 	// Check if exists dividing with zero in expr.
 	isPotentionalProblem = false;
-	expr->accept(this);
+VISIT(	expr, this);
 	if (isPotentionalProblem) {
 		isPotentionalProblem = false;
 		return false;
@@ -311,7 +312,7 @@ bool BitOpToLogOpOptimizer::isPotentionalMulProblem(ShPtr<MulOpExpr> mulOpExpr) 
 */
 void BitOpToLogOpOptimizer::tryOptimizeCond(ShPtr<Expression> expr) {
 	isCondition = true;
-	expr->accept(this);
+VISIT(	expr, this);
 	isCondition = false;
 }
 

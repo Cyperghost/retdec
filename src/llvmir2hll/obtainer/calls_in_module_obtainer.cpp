@@ -10,6 +10,7 @@
 #include "retdec/llvmir2hll/ir/module.h"
 #include "retdec/llvmir2hll/obtainer/calls_in_module_obtainer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -54,7 +55,7 @@ CallsInModuleObtainer::Calls CallsInModuleObtainer::getCallsImpl() {
 void CallsInModuleObtainer::obtainCallsInGlobalVars() {
 	for (auto i = module->global_var_begin(),
 			e = module->global_var_begin(); i != e; ++i) {
-		(*i)->accept(this);
+VISIT(		(*i), this);
 	}
 }
 
@@ -74,7 +75,7 @@ void CallsInModuleObtainer::obtainCallsInFuncs() {
 */
 void CallsInModuleObtainer::obtainCallsInFunc(ShPtr<Function> func) {
 	currFunc = func;
-	func->accept(this);
+VISIT(	func, this);
 }
 
 void CallsInModuleObtainer::visit(ShPtr<CallExpr> expr) {

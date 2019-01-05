@@ -8,6 +8,7 @@
 #include "retdec/llvmir2hll/ir/module.h"
 #include "retdec/llvmir2hll/optimizer/func_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -20,10 +21,10 @@ namespace llvmir2hll {
 * @par Preconditions
 *  - @a module is non-null
 */
-FuncOptimizer::FuncOptimizer(ShPtr<Module> module):
-	Optimizer(module), currFunc() {
-		PRECONDITION_NON_NULL(module);
-	}
+FuncOptimizer::FuncOptimizer(ShPtr<Module> module) :
+		Optimizer(module), currFunc() {
+	PRECONDITION_NON_NULL(module);
+}
 
 /**
 * @brief Destructs the optimizer.
@@ -55,7 +56,7 @@ void FuncOptimizer::doOptimization() {
 void FuncOptimizer::runOnFunction(ShPtr<Function> func) {
 	restart();
 	currFunc = func;
-	func->accept(this);
+	VISIT(func, this);
 }
 
 } // namespace llvmir2hll

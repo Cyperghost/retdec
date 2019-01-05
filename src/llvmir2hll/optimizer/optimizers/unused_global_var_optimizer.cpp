@@ -11,6 +11,7 @@
 #include "retdec/llvmir2hll/optimizer/optimizers/unused_global_var_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
 #include "retdec/utils/container.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 using retdec::utils::hasItem;
 
@@ -54,14 +55,14 @@ void UnusedGlobalVarOptimizer::computeUsedGlobalVars() {
 	for (auto i = module->global_var_begin(), e = module->global_var_end();
 			i != e; ++i) {
 		if (ShPtr<Expression> init = (*i)->getInitializer()) {
-			init->accept(this);
+VISIT(			init, this);
 		}
 	}
 
 	// Function bodies.
 	for (auto i = module->func_definition_begin(),
 			e = module->func_definition_end(); i != e; ++i) {
-		(*i)->accept(this);
+VISIT(		(*i), this);
 	}
 }
 

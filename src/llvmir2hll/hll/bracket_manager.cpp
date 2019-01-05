@@ -55,6 +55,7 @@
 #include "retdec/llvmir2hll/ir/trunc_cast_expr.h"
 #include "retdec/llvmir2hll/ir/variable.h"
 #include "retdec/utils/container.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 using retdec::utils::mapGetValueOrDefault;
 
@@ -84,14 +85,14 @@ void BracketManager::init() {
 	for (auto i = module->global_var_begin(), e = module->global_var_end();
 			i != e; ++i) {
 		if (ShPtr<Expression> init = (*i)->getInitializer()) {
-			init->accept(this);
+VISIT(			init, this);
 		}
 	}
 
 	// Visit all functions.
 	for (auto i = module->func_definition_begin(),
 			e = module->func_definition_end(); i != e; ++i) {
-		(*i)->accept(this);
+VISIT(		(*i), this);
 	}
 }
 
@@ -206,7 +207,7 @@ void BracketManager::removeOperatorFromStackIfSupported(
 void BracketManager::treeTraversalForUnaryOpWithStackOperations(
 		ShPtr<UnaryOpExpr> expr, Operators currentOperator) {
 	addOperatorOnStackIfSupported(currentOperator, Direction::CENTER);
-	expr->getOperand()->accept(this);
+VISIT(	expr->getOperand(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 }
 
@@ -221,11 +222,11 @@ void BracketManager::treeTraversalForUnaryOpWithStackOperations(
 void BracketManager::treeTraversalForBinaryOpWithStackOperations(
 		ShPtr<BinaryOpExpr> expr, Operators currentOperator) {
 	addOperatorOnStackIfSupported(currentOperator, Direction::LEFT);
-	expr->getFirstOperand()->accept(this);
+VISIT(	expr->getFirstOperand(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 
 	addOperatorOnStackIfSupported(currentOperator, Direction::RIGHT);
-	expr->getSecondOperand()->accept(this);
+VISIT(	expr->getSecondOperand(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 }
 
@@ -240,15 +241,15 @@ void BracketManager::treeTraversalForBinaryOpWithStackOperations(
 void BracketManager::treeTraversalForTernaryOpWithStackOperations(
 		ShPtr<TernaryOpExpr> expr, Operators currentOperator) {
 	addOperatorOnStackIfSupported(currentOperator, Direction::RIGHT);
-	expr->getTrueValue()->accept(this);
+VISIT(	expr->getTrueValue(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 
 	addOperatorOnStackIfSupported(currentOperator, Direction::RIGHT);
-	expr->getCondition()->accept(this);
+VISIT(	expr->getCondition(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 
 	addOperatorOnStackIfSupported(currentOperator, Direction::RIGHT);
-	expr->getFalseValue()->accept(this);
+VISIT(	expr->getFalseValue(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 }
 
@@ -263,7 +264,7 @@ void BracketManager::treeTraversalForTernaryOpWithStackOperations(
 void BracketManager::treeTraversalForCastWithStackOperations(
 		ShPtr<CastExpr> expr, Operators currentOperator) {
 	addOperatorOnStackIfSupported(currentOperator, Direction::CENTER);
-	expr->getOperand()->accept(this);
+VISIT(	expr->getOperand(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 }
 
@@ -279,13 +280,13 @@ void BracketManager::treeTraversalForCallWithStackOperations(
 		ShPtr<CallExpr> expr, Operators currentOperator) {
 	// Called expression.
 	addOperatorOnStackIfSupported(currentOperator, Direction::LEFT);
-	expr->getCalledExpr()->accept(this);
+VISIT(	expr->getCalledExpr(), this);
 	removeOperatorFromStackIfSupported(currentOperator);
 
 	// Arguments.
 	for (const auto &arg : expr->getArgs()) {
 		addOperatorOnStackIfSupported(currentOperator, Direction::LEFT);
-		arg->accept(this);
+VISIT(		arg, this);
 		removeOperatorFromStackIfSupported(currentOperator);
 	}
 }

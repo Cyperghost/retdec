@@ -101,6 +101,7 @@
 #include "retdec/llvm-support/diagnostics.h"
 #include "retdec/utils/container.h"
 #include "retdec/utils/conversion.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 using namespace retdec::llvm_support;
 
@@ -503,7 +504,7 @@ void CHLLWriter::visit(ShPtr<GlobalVarDef> varDef) {
 			emitConstStruct(constStructInit, false);
 		} else {
 			out << " = ";
-			init->accept(this);
+VISIT(			init, this);
 		}
 		emitConstantsInStructuredWay = false;
 	}
@@ -557,7 +558,7 @@ void CHLLWriter::visit(ShPtr<ArrayIndexOpExpr> expr) {
 
 	// Access.
 	out << "[";
-	expr->getIndex()->accept(this);
+VISIT(	expr->getIndex(), this);
 	out << "]";
 }
 
@@ -571,7 +572,7 @@ void CHLLWriter::visit(ShPtr<StructIndexOpExpr> expr) {
 
 	// Element.
 	out << "e";
-	expr->getSecondOperand()->accept(this);
+VISIT(	expr->getSecondOperand(), this);
 }
 
 void CHLLWriter::visit(ShPtr<DerefOpExpr> expr) {
@@ -615,11 +616,11 @@ void CHLLWriter::visit(ShPtr<TernaryOpExpr> expr) {
 	if (bracketsAreNeeded) {
 		out << "(";
 	}
-	expr->getCondition()->accept(this);
+VISIT(	expr->getCondition(), this);
 	out << " ? ";
-	expr->getTrueValue()->accept(this);
+VISIT(	expr->getTrueValue(), this);
 	out << " : ";
-	expr->getFalseValue()->accept(this);
+VISIT(	expr->getFalseValue(), this);
 	if (bracketsAreNeeded) {
 		out << ")";
 	}
@@ -703,7 +704,7 @@ void CHLLWriter::visit(ShPtr<TruncCastExpr> expr) {
 	if (isa<IntType>(expr->getType()) &&
 			(cast<IntType>(expr->getType())->isBool())) {
 		out << "(";
-		expr->getOperand()->accept(this);
+VISIT(		expr->getOperand(), this);
 		out << "&1)";
 	} else {
 		emitCastInStandardWay(expr);
@@ -716,10 +717,10 @@ void CHLLWriter::visit(ShPtr<FPToIntCastExpr> expr) {
 	if (type->isBool()) {
 		out << "bool";
 	} else {
-		type->accept(this);
+VISIT(		type, this);
 	}
 	out << ")";
-	expr->getOperand()->accept(this);
+VISIT(	expr->getOperand(), this);
 }
 
 void CHLLWriter::visit(ShPtr<IntToFPCastExpr> expr) {
@@ -814,7 +815,7 @@ void CHLLWriter::visit(ShPtr<AssignStmt> stmt) {
 void CHLLWriter::emitAssignment(ShPtr<Expression> lhs, ShPtr<Expression> rhs) {
 	CompoundOpManager::CompoundOp compoundOp(
 		compoundOpManager->tryOptimizeToCompoundOp(lhs, rhs));
-	lhs->accept(this);
+VISIT(	lhs, this);
 	if (compoundOp.isUnaryOperator()) {
 		// ++ or --
 		out << compoundOp.getOperator();
@@ -823,7 +824,7 @@ void CHLLWriter::emitAssignment(ShPtr<Expression> lhs, ShPtr<Expression> rhs) {
 		out << " " << compoundOp.getOperator() << " ";
 
 		emitConstantsInStructuredWay = true;
-		compoundOp.getOperand()->accept(this);
+VISIT(		compoundOp.getOperand(), this);
 		emitConstantsInStructuredWay = false;
 	}
 }
@@ -856,7 +857,7 @@ void CHLLWriter::emitInitVarDefWhenNeeded(ShPtr<UForLoopStmt> loop) {
 		return;
 	}
 
-	lhsVar->getType()->accept(this);
+VISIT(	lhsVar->getType(), this);
 	out << " ";
 }
 
@@ -874,7 +875,7 @@ void CHLLWriter::visit(ShPtr<VarDefStmt> stmt) {
 			// When defining a structure, we do not need to emit a cast.
 			emitConstStruct(constStruct, false);
 		} else {
-			init->accept(this);
+VISIT(			init, this);
 		}
 		emitConstantsInStructuredWay = false;
 	}
@@ -888,7 +889,7 @@ void CHLLWriter::visit(ShPtr<VarDefStmt> stmt) {
 
 void CHLLWriter::visit(ShPtr<CallStmt> stmt) {
 	out << getCurrentIndent();
-	stmt->getCall()->accept(this);
+VISIT(	stmt->getCall(), this);
 	out << ";\n";
 }
 
@@ -896,7 +897,7 @@ void CHLLWriter::visit(ShPtr<ReturnStmt> stmt) {
 	out << getCurrentIndent() << "return";
 	if (ShPtr<Expression> retVal = stmt->getRetVal()) {
 		out << " ";
-		retVal->accept(this);
+VISIT(		retVal, this);
 	}
 	out << ";\n";
 }
@@ -911,7 +912,7 @@ void CHLLWriter::visit(ShPtr<IfStmt> stmt) {
 		out << getCurrentIndent();
 		out << (i == stmt->clause_begin() ? "if " : " else if ");
 		out << "(";
-		i->first->accept(this);
+VISIT(		i->first, this);
 		out << ") ";
 		emitBlock(i->second);
 	}
@@ -928,7 +929,7 @@ void CHLLWriter::visit(ShPtr<IfStmt> stmt) {
 void CHLLWriter::visit(ShPtr<SwitchStmt> stmt) {
 	out << getCurrentIndent();
 	out << "switch (";
-	stmt->getControlExpr()->accept(this);
+VISIT(	stmt->getControlExpr(), this);
 	out << ") {\n";
 	increaseIndentLevel();
 	// For all cases...
@@ -936,7 +937,7 @@ void CHLLWriter::visit(ShPtr<SwitchStmt> stmt) {
 		out << getCurrentIndent();
 		if (i->first) {
 			out << "case ";
-			i->first->accept(this);
+VISIT(			i->first, this);
 			out << ":";
 		} else {
 			out << "default:";
@@ -952,7 +953,7 @@ void CHLLWriter::visit(ShPtr<SwitchStmt> stmt) {
 
 void CHLLWriter::visit(ShPtr<WhileLoopStmt> stmt) {
 	out << getCurrentIndent() << "while (";
-	stmt->getCondition()->accept(this);
+VISIT(	stmt->getCondition(), this);
 	out << ") ";
 	emitBlock(stmt->getBody());
 	out << "\n";
@@ -960,42 +961,42 @@ void CHLLWriter::visit(ShPtr<WhileLoopStmt> stmt) {
 
 void CHLLWriter::visit(ShPtr<ForLoopStmt> stmt) {
 	out << getCurrentIndent() << "for (";
-	stmt->getIndVar()->getType()->accept(this);
+VISIT(	stmt->getIndVar()->getType(), this);
 	out << " ";
-	stmt->getIndVar()->accept(this);
+VISIT(	stmt->getIndVar(), this);
 	out << " = ";
-	stmt->getStartValue()->accept(this);
+VISIT(	stmt->getStartValue(), this);
 	out << "; ";
-	stmt->getEndCond()->accept(this);
+VISIT(	stmt->getEndCond(), this);
 	out << "; ";
 	// Try to emit as readable step as possible.
 	if (ShPtr<ConstInt> stepInt = cast<ConstInt>(stmt->getStep())) {
 		if (stepInt->getValue() == 1) {
 			// i++
-			stmt->getIndVar()->accept(this);
+VISIT(			stmt->getIndVar(), this);
 			out << "++";
 		// `stepInt->getValue() == -1` does not work.
 		} else if (-stepInt->getValue() == 1) {
 			// i--
-			stmt->getIndVar()->accept(this);
+VISIT(			stmt->getIndVar(), this);
 			out << "--";
 		} else if (stepInt->isNegative()) {
 			// i -= x
-			stmt->getIndVar()->accept(this);
+VISIT(			stmt->getIndVar(), this);
 			out << " -= ";
 			ShPtr<ConstInt> negStepInt(ConstInt::create(-stepInt->getValue()));
-			negStepInt->accept(this);
+VISIT(			negStepInt, this);
 		} else {
 			// i += x
-			stmt->getIndVar()->accept(this);
+VISIT(			stmt->getIndVar(), this);
 			out << " += ";
-			stmt->getStep()->accept(this);
+VISIT(			stmt->getStep(), this);
 		}
 	} else {
 		// i += x (generic)
-		stmt->getIndVar()->accept(this);
+VISIT(		stmt->getIndVar(), this);
 		out << " += ";
-		stmt->getStep()->accept(this);
+VISIT(		stmt->getStep(), this);
 	}
 	out << ") ";
 	emitBlock(stmt->getBody());
@@ -1006,17 +1007,17 @@ void CHLLWriter::visit(ShPtr<UForLoopStmt> stmt) {
 	out << getCurrentIndent() << "for (";
 	if (auto init = stmt->getInit()) {
 		emitInitVarDefWhenNeeded(stmt);
-		init->accept(this);
+VISIT(		init, this);
 	}
 	out << ";";
 	if (auto cond = stmt->getCond()) {
 		out << " ";
-		cond->accept(this);
+VISIT(		cond, this);
 	}
 	out << ";";
 	if (auto step = stmt->getStep()) {
 		out << " ";
-		step->accept(this);
+VISIT(		step, this);
 	}
 	out << ") ";
 	emitBlock(stmt->getBody());
@@ -1091,7 +1092,7 @@ void CHLLWriter::visit(ShPtr<PointerType> type) {
 		numOfStars++;
 	}
 	// If type is a pointer get the contained type.
-	pointedType->getContainedType()->accept(this);
+VISIT(	pointedType->getContainedType(), this);
 	// If type is followed by "*"s, emit a space.
 	if (numOfStars > 0) {
 		out << " ";
@@ -1305,7 +1306,7 @@ void CHLLWriter::emitFunctionHeader(ShPtr<Function> func) {
 	}
 
 	// Ordinary function.
-	retType->accept(this);
+VISIT(	retType, this);
 	out << " " << func->getName() << "(";
 	emitFunctionParameters(func);
 	out << ")";
@@ -1447,9 +1448,9 @@ void CHLLWriter::emitVarWithType(ShPtr<Variable> var) {
 		return;
 	}
 
-	varType->accept(this);
+VISIT(	varType, this);
 	out << " ";
-	var->accept(this);
+VISIT(	var, this);
 
 	// For an array, emit its dimensions.
 	if (ShPtr<ArrayType> arrayType = cast<ArrayType>(varType)) {
@@ -1649,7 +1650,7 @@ void CHLLWriter::emitUninitializedConstArray(ShPtr<ConstArray> array) {
 * @brief Emits the type of elements in the given array.
 */
 void CHLLWriter::emitTypeOfElementsInArray(ShPtr<ArrayType> arrayType) {
-	arrayType->getContainedType()->accept(this);
+VISIT(	arrayType->getContainedType(), this);
 }
 
 /**
@@ -1657,9 +1658,9 @@ void CHLLWriter::emitTypeOfElementsInArray(ShPtr<ArrayType> arrayType) {
 */
 void CHLLWriter::emitCastInStandardWay(ShPtr<CastExpr> expr) {
 	out << "(";
-	expr->getType()->accept(this);
+VISIT(	expr->getType(), this);
 	out << ")";
-	expr->getOperand()->accept(this);
+VISIT(	expr->getOperand(), this);
 }
 
 /**
@@ -1680,7 +1681,7 @@ void CHLLWriter::emitFunctionParameters(ShPtr<FunctionType> funcType) {
 		if (i != funcType->param_begin()) {
 			out << ", ";
 		}
-		(*i)->accept(this);
+VISIT(		(*i), this);
 	}
 }
 
@@ -1688,7 +1689,7 @@ void CHLLWriter::emitFunctionParameters(ShPtr<FunctionType> funcType) {
 * @brief Emits the return type of the given function.
 */
 void CHLLWriter::emitReturnType(ShPtr<FunctionType> funcType) {
-	funcType->getRetType()->accept(this);
+VISIT(	funcType->getRetType(), this);
 }
 
 /**
@@ -1696,7 +1697,7 @@ void CHLLWriter::emitReturnType(ShPtr<FunctionType> funcType) {
 */
 void CHLLWriter::emitNameOfVarIfExists(ShPtr<Variable> var) {
 	if (var) {
-		var->accept(this);
+VISIT(		var, this);
 	}
 }
 
@@ -1736,7 +1737,7 @@ void CHLLWriter::emitNameOfVarIfExists(ShPtr<Variable> var) {
 void CHLLWriter::emitConstStruct(ShPtr<ConstStruct> constant, bool emitCast) {
 	if (emitCast && !emittingGlobalVarDefs) {
 		out << "(";
-		constant->getType()->accept(this);
+VISIT(		constant->getType(), this);
 		out << ")";
 	}
 
@@ -1776,9 +1777,9 @@ void CHLLWriter::emitConstStruct(ShPtr<ConstStruct> constant, bool emitCast) {
 		}
 
 		out << ".e";
-		member.first->accept(this);
+VISIT(		member.first, this);
 		out << " = ";
-		member.second->accept(this);
+VISIT(		member.second, this);
 		someInitEmitted = true;
 	}
 
@@ -1878,7 +1879,7 @@ void CHLLWriter::emitBlock(ShPtr<Statement> stmt) {
 			emitDebugComment(metadata);
 		}
 
-		stmt->accept(this);
+VISIT(		stmt, this);
 		stmt = stmt->getSuccessor();
 	} while (stmt);
 

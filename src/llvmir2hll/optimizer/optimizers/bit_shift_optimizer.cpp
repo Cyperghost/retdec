@@ -17,6 +17,7 @@
 #include "retdec/llvmir2hll/ir/variable.h"
 #include "retdec/llvmir2hll/optimizer/optimizers/bit_shift_optimizer.h"
 #include "retdec/llvmir2hll/support/debug.h"
+#include <retdec/llvmir2hll/support/manager/visitor_manager.h>
 
 namespace retdec {
 namespace llvmir2hll {
@@ -104,14 +105,14 @@ void BitShiftOptimizer::doOptimization() {
 	for (auto i = module->global_var_begin(), e = module->global_var_end();
 			i != e; ++i) {
 		if (ShPtr<Expression> init = (*i)->getInitializer()) {
-			init->accept(this);
+VISIT(			init, this);
 		}
 	}
 
 	// Visit all functions.
 	for (auto i = module->func_definition_begin(),
 			e = module->func_definition_end(); i != e; ++i) {
-		(*i)->accept(this);
+VISIT(		(*i), this);
 	}
 }
 
