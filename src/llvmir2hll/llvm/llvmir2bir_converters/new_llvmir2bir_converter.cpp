@@ -20,6 +20,7 @@
 #include "retdec/llvmir2hll/utils/ir.h"
 #include "retdec/llvmir2hll/utils/string.h"
 #include "retdec/llvm-support/diagnostics.h"
+#include "retdec/utils/worker.h"
 
 using namespace retdec::llvm_support;
 
@@ -29,7 +30,7 @@ namespace llvmir2hll {
 namespace {
 
 REGISTER_AT_FACTORY("new", NEW_LLVMIR2BIR_CONVERTER_ID, LLVMIR2BIRConverterFactory,
-	NewLLVMIR2BIRConverter::create);
+                    NewLLVMIR2BIRConverter::create);
 
 } // anonymous namespace
 
@@ -38,9 +39,9 @@ REGISTER_AT_FACTORY("new", NEW_LLVMIR2BIR_CONVERTER_ID, LLVMIR2BIRConverterFacto
 *
 * See create() for the description of parameters.
 */
-NewLLVMIR2BIRConverter::NewLLVMIR2BIRConverter(llvm::Pass *basePass):
-	LLVMIR2BIRConverter(basePass), enableDebug(false), converter(),
-	llvmModule(nullptr), resModule(), structConverter(), variablesManager() {}
+NewLLVMIR2BIRConverter::NewLLVMIR2BIRConverter(llvm::Pass *basePass) :
+		LLVMIR2BIRConverter(basePass), enableDebug(false),
+		llvmModule(nullptr), resModule() {}
 
 /**
 * @brief Creates a new instance of LLVMIR2BIRConverter.
@@ -61,20 +62,16 @@ std::string NewLLVMIR2BIRConverter::getId() const {
 }
 
 ShPtr<Module> NewLLVMIR2BIRConverter::convert(llvm::Module *llvmModule,
-		const std::string &moduleName, ShPtr<Semantics> semantics,
-		ShPtr<Config> config, bool enableDebug) {
+                                              const std::string &moduleName,
+                                              ShPtr<Semantics> semantics,
+                                              ShPtr<Config> config, bool enableDebug) {
 	PRECONDITION_NON_NULL(llvmModule);
 	PRECONDITION_NON_NULL(semantics);
 
 	this->llvmModule = llvmModule;
 	this->enableDebug = enableDebug;
 	resModule = std::make_shared<Module>(llvmModule, moduleName, semantics,
-		config);
-	variablesManager = std::make_shared<VariablesManager>(resModule);
-	converter = LLVMValueConverter::create(resModule, variablesManager);
-	structConverter = std::make_unique<StructureConverter>(basePass, converter);
-
-	converter->setOptionStrictFPUSemantics(optionStrictFPUSemantics);
+	                                     config);
 
 	convertAndAddFuncsDeclarations();
 	convertAndAddGlobalVariables();
@@ -98,7 +95,7 @@ bool NewLLVMIR2BIRConverter::isExternal(const llvm::GlobalVariable &var) const {
 *        converted and added into the resulting module.
 */
 bool NewLLVMIR2BIRConverter::shouldBeConvertedAndAdded(
-		const llvm::GlobalVariable &globVar) const {
+		const llvm::GlobalVariable &globVar, ShPtr<LLVMValueConverter> converter) const {
 	return !converter->storesStringLiteral(globVar);
 }
 
@@ -106,7 +103,7 @@ bool NewLLVMIR2BIRConverter::shouldBeConvertedAndAdded(
 * @brief Converts the given LLVM global variable @a globVar into a variable in BIR.
 */
 ShPtr<Variable> NewLLVMIR2BIRConverter::convertGlobalVariable(
-		llvm::GlobalVariable &globVar) const {
+		llvm::GlobalVariable &globVar, ShPtr<LLVMValueConverter> converter) const {
 	auto var = converter->convertValueToVariable(&globVar);
 	if (isExternal(globVar)) {
 		var->markAsExternal();
@@ -120,10 +117,10 @@ ShPtr<Variable> NewLLVMIR2BIRConverter::convertGlobalVariable(
 *        an expression in BIR.
 */
 ShPtr<Expression> NewLLVMIR2BIRConverter::convertGlobalVariableInitializer(
-		llvm::GlobalVariable &globVar) const {
+		llvm::GlobalVariable &globVar, ShPtr<LLVMValueConverter> converter) const {
 	if (globVar.hasInitializer()) {
 		return converter->convertConstantToExpression(
-			globVar.getInitializer());
+				globVar.getInitializer());
 	}
 
 	return nullptr;
@@ -137,11 +134,12 @@ void NewLLVMIR2BIRConverter::convertAndAddGlobalVariables() {
 	if (enableDebug) {
 		printSubPhase("converting global variables");
 	}
-
+	auto variablesManager = std::make_shared<VariablesManager>(resModule);
+	auto converter = LLVMValueConverter::create(resModule, variablesManager);
 	for (auto &globVar: llvmModule->globals()) {
-		if (shouldBeConvertedAndAdded(globVar)) {
-			auto variable = convertGlobalVariable(globVar);
-			auto initializer = convertGlobalVariableInitializer(globVar);
+		if (shouldBeConvertedAndAdded(globVar, converter)) {
+			auto variable = convertGlobalVariable(globVar, converter);
+			auto initializer = convertGlobalVariableInitializer(globVar, converter);
 			resModule->addGlobalVar(variable, initializer);
 		}
 	}
@@ -151,7 +149,8 @@ void NewLLVMIR2BIRConverter::convertAndAddGlobalVariables() {
 * @brief Converts parameters of the given LLVM function @a func into a list of
 *        function parameters in BIR.
 */
-VarVector NewLLVMIR2BIRConverter::convertFuncParams(llvm::Function &func) {
+VarVector NewLLVMIR2BIRConverter::convertFuncParams(llvm::Function &func,
+                                                    ShPtr<LLVMValueConverter> converter) {
 	VarVector params;
 	for (auto &arg: func.args()) {
 		params.push_back(converter->convertValueToVariable(&arg));
@@ -165,12 +164,14 @@ VarVector NewLLVMIR2BIRConverter::convertFuncParams(llvm::Function &func) {
 *        a function declaration in BIR.
 */
 ShPtr<Function> NewLLVMIR2BIRConverter::convertFuncDeclaration(
-		llvm::Function &func) {
+		llvm::Function &func,
+		std::shared_ptr<VariablesManager> variablesManager,
+		ShPtr<LLVMValueConverter> converter) {
 	// Clear local variables before conversion.
 	variablesManager->reset();
 
 	auto retType = converter->convertType(func.getReturnType());
-	auto params = convertFuncParams(func);
+	auto params = convertFuncParams(func, converter);
 
 	auto birFunc = Function::create(retType, func.getName(), params);
 	birFunc->setVarArg(func.isVarArg());
@@ -180,7 +181,12 @@ ShPtr<Function> NewLLVMIR2BIRConverter::convertFuncDeclaration(
 /**
 * @brief Updates the given LLVM function @a func from declaration to definition.
 */
-void NewLLVMIR2BIRConverter::updateFuncToDefinition(llvm::Function &func) {
+void NewLLVMIR2BIRConverter::updateFuncToDefinition(llvm::Function &func,
+                                                    std::shared_ptr<VariablesManager>
+                                                            variablesManager,
+                                                    ShPtr<LLVMValueConverter> converter,
+                                                    ShPtr<StructureConverter>
+                                                            structConverter) {
 	auto name = func.getName();
 	if (enableDebug) {
 		printSubPhase("converting function " + name.str());
@@ -191,7 +197,7 @@ void NewLLVMIR2BIRConverter::updateFuncToDefinition(llvm::Function &func) {
 		// Clear local variables before conversion.
 		variablesManager->reset();
 
-		birFunc->setParams(convertFuncParams(func));
+		birFunc->setParams(convertFuncParams(func, converter));
 		birFunc->setBody(structConverter->convertFuncBody(func));
 		birFunc->setLocalVars(variablesManager->getLocalVars());
 
@@ -234,11 +240,19 @@ bool NewLLVMIR2BIRConverter::shouldBeConvertedAndAdded(
 *        them into the resulting module.
 */
 void NewLLVMIR2BIRConverter::convertAndAddFuncsDeclarations() {
+	retdec::utils::Worker worker;
+	auto variablesManager = std::make_shared<VariablesManager>(resModule);
+	auto converter = LLVMValueConverter::create(resModule, variablesManager);
+
+	converter->setOptionStrictFPUSemantics(optionStrictFPUSemantics);
 	for (auto &func: llvmModule->functions()) {
-		if (shouldBeConvertedAndAdded(func)) {
-			resModule->addFunc(convertFuncDeclaration(func));
-		}
+		worker.push([this, &func, variablesManager, converter] {
+			if (shouldBeConvertedAndAdded(func)) {
+				resModule->addFunc(convertFuncDeclaration(func, variablesManager, converter));
+			}
+		});
 	}
+	worker.stop(true);
 }
 
 /**
@@ -246,11 +260,20 @@ void NewLLVMIR2BIRConverter::convertAndAddFuncsDeclarations() {
 *        converts their bodies and stores them into the resulting module.
 */
 void NewLLVMIR2BIRConverter::convertFuncsBodies() {
+	retdec::utils::Worker worker;
+	auto variablesManager = std::make_shared<VariablesManager>(resModule);
+	auto converter = LLVMValueConverter::create(resModule, variablesManager);
+	auto structConverter = std::make_shared<StructureConverter>(basePass, converter);
+
+	converter->setOptionStrictFPUSemantics(optionStrictFPUSemantics);
 	for (auto &func: llvmModule->functions()) {
-		if (!func.isDeclaration() && shouldBeConvertedAndAdded(func)) {
-			updateFuncToDefinition(func);
-		}
+		worker.push([this, &func, variablesManager, converter, structConverter] {
+			if (!func.isDeclaration() && shouldBeConvertedAndAdded(func)) {
+				updateFuncToDefinition(func, variablesManager, converter, structConverter);
+			}
+		});
 	}
+	worker.stop(true);
 }
 
 /**

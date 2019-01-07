@@ -290,6 +290,7 @@ set(LLVMIR2HLL_SOURCES
 	utils/ir.cpp
 	utils/loop_optimizer.cpp
 	utils/string.cpp
+	utils/worker.cpp
 	validator/validator.cpp
 	validator/validators/break_outside_loop_validator.cpp
 	validator/validators/no_global_var_def_validator.cpp
